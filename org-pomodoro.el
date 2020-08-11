@@ -149,7 +149,7 @@ Use `org-pomodoro-overtime-sound' to determine what sound that should be."
 
 (defcustom org-pomodoro-overtime-sound (when load-file-name
                                          (concat (file-name-directory load-file-name)
-                                                 "resources/bell.wav"))
+                                                 "resources/over-time.wav"))
   "The path to a sound file that´s to be played when a pomodoro runs overtime."
   :group 'org-pomodoro
   :type 'file)
@@ -158,6 +158,11 @@ Use `org-pomodoro-overtime-sound' to determine what sound that should be."
   "Arguments used when playing the `org-pomodoro-overtime-sound'."
   :group 'org-pomodoro
   :type 'string)
+
+(defcustom org-pomodoro-overtime-nofity-length 180
+  "Arguments used when playing the `org-pomodoro-overtime-sound'."
+  :group 'org-pomodoro
+  :type 'number)
 
 ;;; POMODORO KILLED SOUND
 (defcustom org-pomodoro-killed-sound-p nil
@@ -249,6 +254,14 @@ Use `org-pomodoro-long-break-sound' to determine what sound that should be."
   "The frequency at which to playback the ticking sound."
   :group 'org-pomodoro
   :type 'list)
+
+;;; notify sound
+(defcustom org-pomodoro-overtime-notify-sound (when load-file-name
+                                      (concat (file-name-directory load-file-name)
+                                              "resources/you-need-to-take-a-rest.wav"))
+  "The path to a sound file if is overtime but you are still working"
+  :group 'org-pomodoro
+  :type 'file)
 
 ;;; OVERTIME VALUES
 (defcustom org-pomodoro-overtime-format "+%s"
@@ -410,13 +423,10 @@ or :break when starting a break.")
   "Play an audio file specified by TYPE (:pomodoro, :short-break, :long-break)."
   (let ((sound (org-pomodoro-sound type))
         (args (org-pomodoro-sound-args type)))
-    (cond ((and (fboundp 'sound-wav-play)
-		org-pomodoro-play-sounds
-		sound)
+    (cond
+     ((and (fboundp 'sound-wav-play) org-pomodoro-play-sounds sound)
 	   (sound-wav-play sound))
-	  ((and org-pomodoro-audio-player
-		org-pomodoro-play-sounds
-		sound)
+	  ((and org-pomodoro-audio-player org-pomodoro-play-sounds sound)
 	   (start-process-shell-command
 	    "org-pomodoro-audio-player" nil
 	    (mapconcat 'identity
@@ -529,17 +539,16 @@ The argument STATE is optional.  The default state is `:pomodoro`."
   (org-pomodoro-update-mode-line)
   (org-agenda-maybe-redo))
 
-(defun org-pomodoro-notify (title message)
-  "Send a notification with TITLE and MESSAGE using `alert'."
-  (alert message :title title :category 'org-pomodoro))
-
 ;; Handlers for pomodoro events.
 
 (defun org-pomodoro-overtime ()
   "Is invoked when the time for a pomodoro runs out.
 Notify the user that the pomodoro should be finished by calling ‘org-pomodoro’"
-  (org-pomodoro-maybe-play-sound :overtime)
-  (org-pomodoro-notify "Pomodoro completed. Now on overtime!" "Start break by calling ‘org-pomodoro’")
+  (notifications-notify
+   :title "OVERTIME"
+   :body (format "Pomodoro over time <b>+%s</b>" (org-pomodoro-format-seconds))
+   :app-icon (concat default-directory "resources/rest.svg")
+   :sound-file org-pomodoro-overtime-sound)
   (org-pomodoro-start :overtime)
   (org-pomodoro-update-mode-line)
   (run-hooks 'org-pomodoro-overtime-hook))
@@ -555,7 +564,9 @@ This may send a notification, play a sound and start a pomodoro break."
   (if (zerop (mod org-pomodoro-count org-pomodoro-long-break-frequency))
       (org-pomodoro-start :long-break)
     (org-pomodoro-start :short-break))
-  (org-pomodoro-notify "Pomodoro completed!" "Time for a break.")
+  (notifications-notify
+   :title "time for break"
+   :app-icon (concat default-directory "resources/rest.svg"))
   (org-pomodoro-update-mode-line)
   (org-agenda-maybe-redo)
   (run-hooks 'org-pomodoro-finished-hook))
@@ -564,7 +575,6 @@ This may send a notification, play a sound and start a pomodoro break."
   "Is invoked when a pomodoro was killed.
 This may send a notification, play a sound and adds log."
   (org-pomodoro-reset)
-  (org-pomodoro-notify "Pomodoro killed." "One does not simply kill a pomodoro!")
   (when (org-clocking-p)
     (if org-pomodoro-keep-killed-pomodoro-time
         (org-clock-out nil t)
@@ -577,7 +587,6 @@ This may send a notification and play a sound."
   (when org-pomodoro-clock-break
     (org-clock-out nil t))
   (org-pomodoro-reset)
-  (org-pomodoro-notify "Short break finished." "Ready for another pomodoro?")
   (org-pomodoro-maybe-play-sound :short-break)
   (run-hooks 'org-pomodoro-break-finished-hook 'org-pomodoro-short-break-finished-hook))
 
@@ -587,7 +596,6 @@ This may send a notification and play a sound."
   (when org-pomodoro-clock-break
     (org-clock-out nil t))
   (org-pomodoro-reset)
-  (org-pomodoro-notify "Long break finished." "Ready for another pomodoro?")
   (org-pomodoro-maybe-play-sound :long-break)
   (run-hooks 'org-pomodoro-break-finished-hook 'org-pomodoro-long-break-finished-hook))
 
@@ -617,8 +625,7 @@ the current task is clocked in.  Otherwise EMACS will ask whether we´d like to
 kill the current timer, this may be a break or a running pomodoro."
   (interactive "P")
   (when (eq org-pomodoro-state :none)
-      (setq org-pomodoro-length (read-number "Promodo Length: " 40))
-      (setq org-pomodoro-count-p t))
+      (setq org-pomodoro-length (read-number "Promodo Length: " 40)))
   (when (and org-pomodoro-last-clock-in
              org-pomodoro-expiry-time
              (org-pomodoro-expires-p)
@@ -629,7 +636,6 @@ kill the current timer, this may be a break or a running pomodoro."
   (cond
    ;; possibly break from overtime
    ((and (org-pomodoro-active-p) (eq org-pomodoro-state :overtime))
-    (setq org-pomodoro-count-p t)
     (org-pomodoro-finished))
    ;; maybe kill from break
    ((and (org-pomodoro-active-p) (or (eq org-pomodoro-state :short-break) (eq org-pomodoro-state :long-break)))
@@ -660,6 +666,22 @@ kill the current timer, this may be a break or a running pomodoro."
           (call-interactively 'org-clock-in))))
     (org-pomodoro-start :pomodoro))))
 
+(defun org-pomodoro-overtime-notify()
+
+  (let ((len org-pomodoro-overtime-nofity-length))
+    (when (and
+         (eq org-pomodoro-state :overtime)
+         (not (equal (truncate (org-pomodoro-remaining-seconds)) 0))
+         (zerop (mod (truncate (- (org-pomodoro-remaining-seconds))) len))
+         (time-less-p (org-x11-idle-seconds) '(0 len 0 0))) ;; only alarm once if idle
+    (notifications-notify
+     :title "OVERTIME"
+     :body (format "Pomodoro over time <b>+%s</b>" (org-pomodoro-format-seconds))
+     :app-icon (concat default-directory "resources/rest.svg")
+     :sound-file org-pomodoro-overtime-notify-sound))))
+
+;;; this hook will add when org-pomodoro is loaded
+(add-hook 'org-pomodoro-tick-hook 'org-pomodoro-overtime-notify)
 (provide 'org-pomodoro)
 
 ;;; org-pomodoro.el ends here
