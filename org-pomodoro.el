@@ -446,9 +446,9 @@ org-pomodoro-time-format."
   "Set the modeline accordingly to the current state."
   (let ((s (cl-case org-pomodoro-state
              (:pomodoro
-              (propertize org-pomodoro-format 'face 'org-pomodoro-mode-line))
+              (propertize (concat (s-trim (format "%.20s" org-clock-current-task)) "... => " org-pomodoro-format) 'face 'org-pomodoro-mode-line))
              (:overtime
-              (propertize org-pomodoro-overtime-format
+              (propertize (concat (s-trim (format "%.20s" org-clock-current-task)) "... => " org-pomodoro-overtime-format)
                           'face 'org-pomodoro-mode-line-overtime))
              (:short-break
               (propertize org-pomodoro-short-break-format
@@ -550,7 +550,8 @@ This may send a notification, play a sound and start a pomodoro break."
   (unless org-pomodoro-clock-break
       (org-clock-out nil t))
   (org-pomodoro-maybe-play-sound :pomodoro)
-  (setq org-pomodoro-count (+ org-pomodoro-count 1))
+  (if org-pomodoro-count-p
+      (setq org-pomodoro-count (+ org-pomodoro-count 1)))
   (if (zerop (mod org-pomodoro-count org-pomodoro-long-break-frequency))
       (org-pomodoro-start :long-break)
     (org-pomodoro-start :short-break))
@@ -615,24 +616,33 @@ When no timer is running for `org-pomodoro` a new pomodoro is started and
 the current task is clocked in.  Otherwise EMACS will ask whether we´d like to
 kill the current timer, this may be a break or a running pomodoro."
   (interactive "P")
-
+  (when (eq org-pomodoro-state :none)
+      (setq org-pomodoro-length (read-number "Promodo Length: " 40))
+      (setq org-pomodoro-count-p t))
   (when (and org-pomodoro-last-clock-in
              org-pomodoro-expiry-time
              (org-pomodoro-expires-p)
-             (y-or-n-p "Reset pomodoro count? "))
-    (setq org-pomodoro-count 0))
+             (not (eq org-pomodoro-state :overtime)))
+        (setq org-pomodoro-count 0))
   (setq org-pomodoro-last-clock-in (current-time))
 
   (cond
    ;; possibly break from overtime
    ((and (org-pomodoro-active-p) (eq org-pomodoro-state :overtime))
+    (setq org-pomodoro-count-p t)
     (org-pomodoro-finished))
+   ;; maybe kill from break
+   ((and (org-pomodoro-active-p) (or (eq org-pomodoro-state :short-break) (eq org-pomodoro-state :long-break)))
+    (org-pomodoro-reset))
    ;; Maybe kill running pomodoro
    ((org-pomodoro-active-p)
     (if (or (not org-pomodoro-ask-upon-killing)
-            (y-or-n-p "There is already a running timer.  Would you like to stop it? "))
-        (org-pomodoro-kill)
-      (message "Alright, keep up the good work!")))
+            (y-or-n-p "Running Timer, Stop It?"))
+        (progn
+         (setq org-pomodoro-keep-killed-pomodoro-time t)
+         (setq org-pomodoro-count (+ org-pomodoro-count 1))
+         (org-pomodoro-kill))
+      (message "alright, keep up the good work!")))
    ;; or start and clock in pomodoro
    (t
     (cond
