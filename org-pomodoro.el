@@ -159,11 +159,6 @@ Use `org-pomodoro-overtime-sound' to determine what sound that should be."
   :group 'org-pomodoro
   :type 'string)
 
-(defcustom org-pomodoro-overtime-nofity-length 180
-  "Arguments used when playing the `org-pomodoro-overtime-sound'."
-  :group 'org-pomodoro
-  :type 'number)
-
 ;;; POMODORO KILLED SOUND
 (defcustom org-pomodoro-killed-sound-p nil
   "Determines whether to play a sound when a pomodoro killed.
@@ -667,18 +662,16 @@ kill the current timer, this may be a break or a running pomodoro."
     (org-pomodoro-start :pomodoro))))
 
 (defun org-pomodoro-overtime-notify()
-
-  (let ((len org-pomodoro-overtime-nofity-length))
-    (when (and
+  (when (and
          (eq org-pomodoro-state :overtime)
          (not (equal (truncate (org-pomodoro-remaining-seconds)) 0))
-         (zerop (mod (truncate (- (org-pomodoro-remaining-seconds))) len))
-         (time-less-p (org-x11-idle-seconds) '(0 len 0 0))) ;; only alarm once if idle
+         (zerop (mod (truncate (- (org-pomodoro-remaining-seconds))) 180))
+         (time-less-p (org-x11-idle-seconds) '(0 180 0 0))) ;; only alarm once if idle
     (notifications-notify
      :title "OVERTIME"
      :body (format "Pomodoro over time <b>+%s</b>" (org-pomodoro-format-seconds))
      :app-icon (concat default-directory "resources/rest.svg")
-     :sound-file org-pomodoro-overtime-notify-sound))))
+     :sound-file org-pomodoro-overtime-notify-sound)))
 
 ;;; this hook will add when org-pomodoro is loaded
 (add-hook 'org-pomodoro-tick-hook 'org-pomodoro-overtime-notify)
