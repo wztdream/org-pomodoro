@@ -554,8 +554,7 @@ This may send a notification, play a sound and start a pomodoro break."
   (unless org-pomodoro-clock-break
       (org-clock-out nil t))
   (org-pomodoro-maybe-play-sound :pomodoro)
-  (if org-pomodoro-count-p
-      (setq org-pomodoro-count (+ org-pomodoro-count 1)))
+  (setq org-pomodoro-count (+ org-pomodoro-count 1))
   (if (zerop (mod org-pomodoro-count org-pomodoro-long-break-frequency))
       (org-pomodoro-start :long-break)
     (org-pomodoro-start :short-break))
