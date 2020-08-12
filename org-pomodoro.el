@@ -32,6 +32,7 @@
 ;; For a full explanation of the pomodoro technique, have a look at:
 ;;   http://www.pomodorotechnique.com
 
+;;;; just of test
 ;;; Code:
 (eval-when-compile
   (require 'cl-lib))
