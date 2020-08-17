@@ -299,7 +299,20 @@ whether to reset the pomodoro count next time you call `org-pomodoro'."
   "Keeps the clocked time of killed pomodoros."
   :group 'org-pomodoro
   :type 'boolean)
+;; icons
+(defcustom org-pomodoro-overtime-icon (when load-file-name
+                                         (concat (file-name-directory load-file-name)
+                                                 "resources/beach.svg"))
+  "The path to a sound file that´s to be played when a pomodoro was finished."
+  :group 'org-pomodoro
+  :type 'file)
 
+(defcustom org-pomodoro-no-set-me-icon (when load-file-name
+                                        (concat (file-name-directory load-file-name)
+                                                "resources/tomato.svg"))
+  "The path to a sound file that´s to be played when a pomodoro was finished."
+  :group 'org-pomodoro
+  :type 'file)
 ;; Hooks
 
 (defvar org-pomodoro-started-hook nil
@@ -543,7 +556,7 @@ Notify the user that the pomodoro should be finished by calling ‘org-pomodoro�
   (notifications-notify
    :title "OVERTIME"
    :body (format "Pomodoro over time <b>+%s</b>" (org-pomodoro-format-seconds))
-   :app-icon (concat default-directory "resources/rest.svg")
+   :app-icon org-pomodoro-overtime-icon
    :sound-file org-pomodoro-overtime-sound)
   (org-pomodoro-start :overtime)
   (org-pomodoro-update-mode-line)
@@ -561,7 +574,7 @@ This may send a notification, play a sound and start a pomodoro break."
     (org-pomodoro-start :short-break))
   (notifications-notify
    :title "time for break"
-   :app-icon (concat default-directory "resources/rest.svg"))
+   :app-icon org-pomodoro-overtime-icon
   (org-pomodoro-update-mode-line)
   (org-agenda-maybe-redo)
   (run-hooks 'org-pomodoro-finished-hook))
@@ -670,7 +683,7 @@ kill the current timer, this may be a break or a running pomodoro."
     (notifications-notify
      :title "OVERTIME"
      :body (format "Pomodoro over time <b>+%s</b>" (org-pomodoro-format-seconds))
-     :app-icon (concat default-directory "resources/rest.svg")
+     :app-icon org-pomodoro-overtime-icon
      :sound-file org-pomodoro-overtime-notify-sound)))
 
 ;;; this hook will add when org-pomodoro is loaded
