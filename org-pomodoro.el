@@ -307,12 +307,6 @@ whether to reset the pomodoro count next time you call `org-pomodoro'."
   :group 'org-pomodoro
   :type 'file)
 
-(defcustom org-pomodoro-no-set-me-icon (when load-file-name
-                                        (concat (file-name-directory load-file-name)
-                                                "resources/tomato.svg"))
-  "The path to a sound file that´s to be played when a pomodoro was finished."
-  :group 'org-pomodoro
-  :type 'file)
 ;; Hooks
 
 (defvar org-pomodoro-started-hook nil
