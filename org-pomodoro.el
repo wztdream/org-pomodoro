@@ -568,7 +568,7 @@ This may send a notification, play a sound and start a pomodoro break."
     (org-pomodoro-start :short-break))
   (notifications-notify
    :title "time for break"
-   :app-icon org-pomodoro-overtime-icon
+   :app-icon org-pomodoro-overtime-icon)
   (org-pomodoro-update-mode-line)
   (org-agenda-maybe-redo)
   (run-hooks 'org-pomodoro-finished-hook))
