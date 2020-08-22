@@ -677,8 +677,12 @@ kill the current timer, this may be a break or a running pomodoro."
     (notifications-notify
      :title "OVERTIME"
      :body (format "Pomodoro over time <b>+%s</b>" (org-pomodoro-format-seconds))
+     :actions '("ok" "why not?")
+     :on-action 'org-pomodoro-overtime-action
      :app-icon org-pomodoro-overtime-icon
      :sound-file org-pomodoro-overtime-notify-sound)))
+(defun org-pomodoro-overtime-action (id key)
+  (cond ((equal key "ok") (org-pomodoro))))
 
 ;;; this hook will add when org-pomodoro is loaded
 (add-hook 'org-pomodoro-tick-hook 'org-pomodoro-overtime-notify)
