@@ -254,7 +254,7 @@ Use `org-pomodoro-long-break-sound' to determine what sound that should be."
 ;;; notify sound
 (defcustom org-pomodoro-overtime-notify-sound (when load-file-name
                                       (concat (file-name-directory load-file-name)
-                                              "resources/you-need-to-take-a-rest.wav"))
+                                              "resources/why-not-a-comfortable-sleep.wav"))
   "The path to a sound file if is overtime but you are still working"
   :group 'org-pomodoro
   :type 'file)
