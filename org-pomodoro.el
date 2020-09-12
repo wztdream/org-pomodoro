@@ -459,10 +459,9 @@ org-pomodoro-time-format."
   "Set the modeline accordingly to the current state."
   (let ((s (cl-case org-pomodoro-state
              (:pomodoro
-              (propertize (concat (s-trim (format "%.20s" org-clock-current-task)) "... => " org-pomodoro-format) 'face 'org-pomodoro-mode-line))
+              (propertize org-pomodoro-format 'face 'org-pomodoro-mode-line))
              (:overtime
-              (propertize (concat (s-trim (format "%.20s" org-clock-current-task)) "... => " org-pomodoro-overtime-format)
-                          'face 'org-pomodoro-mode-line-overtime))
+              (propertize org-pomodoro-overtime-format 'face 'org-pomodoro-mode-line-overtime))
              (:short-break
               (propertize org-pomodoro-short-break-format
                           'face 'org-pomodoro-mode-line-break))
