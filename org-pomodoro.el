@@ -546,12 +546,12 @@ The argument STATE is optional.  The default state is `:pomodoro`."
 (defun org-pomodoro-overtime ()
   "Is invoked when the time for a pomodoro runs out.
 Notify the user that the pomodoro should be finished by calling ‘org-pomodoro’"
+  (org-pomodoro-start :overtime)
   (notifications-notify
    :title "OVERTIME"
    :body (format "Pomodoro over time <b>+%s</b>" (org-pomodoro-format-seconds))
    :app-icon org-pomodoro-overtime-icon
    :sound-file org-pomodoro-overtime-sound)
-  (org-pomodoro-start :overtime)
   (org-pomodoro-update-mode-line)
   (run-hooks 'org-pomodoro-overtime-hook))
 
